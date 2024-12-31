@@ -1,0 +1,45 @@
+### IntelliJ IDEA ###
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+.idea/
+
+### Eclipse ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+*.der
+*.iml
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+*.wav
+*.mp3
+*.txt
+*.doc
+*.pdf
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### VS Code ###
+.vscode/
+.env
+
+### Mac OS ###
+.DS_Store
+
+/fooocus/dev/
+/fooocus/models/
+/dockerservices/torrent/config/
+/mlmodels/sheet-sage/sheetsage/
+**/config/**
+/python/operations/audiotext/vosk/model/**
