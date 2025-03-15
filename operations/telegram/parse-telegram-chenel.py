@@ -1,6 +1,10 @@
 from telethon import TelegramClient
 import asyncio
 import os
+from dotenv import load_dotenv
+
+# Загрузить переменные окружения из файла .env
+load_dotenv()
 
 # Замените эти значения на свои
 api_id = os.getenv('TELEGRAM_API_ID')
