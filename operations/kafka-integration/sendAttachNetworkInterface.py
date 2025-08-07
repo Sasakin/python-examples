@@ -1,6 +1,12 @@
 from confluent_kafka import Producer
 import json
 import uuid
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
+CLOUD_ID = os.getenv("CLOUD_ID")
+RESOURCE_GROUP_NAME = os.getenv("RESOURCE_GROUP_NAME")        
 
 # Конфигурация Kafka
 conf = {
@@ -43,7 +49,7 @@ NEW_EXTENSIONS = {
 
 # Обновленные данные ресурса
 NEW_DATA_PAYLOAD = {
-    "networkInterfaceId": "f15121ee-b1ab-4d66-b9c8-5f52601744bc",
+    "networkInterfaceId": "42c83e85-4cff-4987-8a83-2abb620bb54c",
     "routeTableId": "f15121ee-b1ab-4d66-b9c8-5f52601744bc"
   }
 
