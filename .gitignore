@@ -8,6 +8,7 @@ out/
 *.env
 *.exe
 *.session-journal
+*.mid
 
 ### Eclipse ###
 .apt_generated
@@ -48,3 +49,9 @@ bin/
 /mlmodels/sheet-sage/sheetsage/
 **/config/**
 /python/operations/audiotext/vosk/model/**
+
+__pycache__
+vector_store
+confluence_docs
+
+credentials.json
