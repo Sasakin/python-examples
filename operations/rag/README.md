@@ -37,7 +37,7 @@ python main.py query "Что такое cx-flow?"
 ```bash
 python main.py rag "Как использовать автоматический переход?"
 python main.py rag "Что такое cx-flow?"
- python main.py rag "Как написать конфигурацию flow используя  cx-flow?" --output response.txt --top-k 20
+python main.py rag "Как написать конфигурацию flow используя  cx-flow?" --top-k 15
 ```
 
 ## Команды

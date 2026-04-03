@@ -11,12 +11,14 @@ from urllib.parse import urljoin, unquote
 from datetime import datetime
 from pathlib import Path
 
+import argparse
+import sys
+
 # ================= CONFIG =================
 BASE_URL = os.getenv("CONFLUENCE_URL")
 API_TOKEN = os.getenv("CONFLUENCE_TOKEN")
-START_PAGE_ID = "89021667"
-MAX_DEPTH = 2
-OUTPUT_DIR = "confluence_docs"  # Папка для экспорта
+DEFAULT_MAX_DEPTH = 2
+DEFAULT_OUTPUT_DIR = "confluence_docs"  # Папка для экспорта
 # ==========================================
 
 HEADERS = {
@@ -199,7 +201,7 @@ def confluence_to_markdown(html):
 def get_full_page_content(page_id):
     """Загружает страницу с полным body.storage"""
     url = f"{BASE_URL}/rest/api/content/{page_id}"
-    params = {"expand": "body.storage,space,version,ancestors"}
+    params = {"expand": "body.storage,space,version,ancestors,_links"}
     return make_request(url, params)
 
 def get_child_pages(page_id, limit=100):
@@ -216,12 +218,18 @@ def export_page_to_markdown(page_data, output_dir, path_prefix=""):
         file_path = Path(output_dir) / path_prefix / file_name
         file_path.parent.mkdir(parents=True, exist_ok=True)
         
+        # Формируем полный URL из _links
+        links = page_data.get('_links', {})
+        base_url = links.get('base', BASE_URL)
+        webui_path = links.get('webui', '')
+        full_url = urljoin(base_url, webui_path) if webui_path else ''
+
         frontmatter = f"""---
 title: "{title}"
 confluence_id: "{page_data['id']}"
 space: "{page_data.get('space', {}).get('key', '')}"
 version: {page_data.get('version', {}).get('number', 0)}
-url: "{page_data.get('webui_link', '')}"
+url: "{full_url}"
 exported: "{datetime.now().isoformat()}"
 ---
 
@@ -306,35 +314,75 @@ def generate_toc(tree, indent=0):
     return lines
 
 def main():
-    output_dir = Path(OUTPUT_DIR)
-    output_dir.mkdir(exist_ok=True)
-    
-    print(f"🚀 Экспорт документации из {START_PAGE_ID}, глубина={MAX_DEPTH}")
+    parser = argparse.ArgumentParser(
+        description="Экспорт страниц Confluence в Markdown",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Примеры:
+  python confluence_parser.py -p 12345678              Экспорт с указанной страницы
+  python confluence_parser.py -p 12345678 -d 3         Глубина 3 уровня
+  python confluence_parser.py -p 12345678 -o my_docs   Сохранить в my_docs/
+        """
+    )
+
+    parser.add_argument(
+        "-p", "--page-id",
+        type=str,
+        required=True,
+        help="ID корневой страницы Confluence (обязательный параметр)"
+    )
+    parser.add_argument(
+        "-d", "--depth",
+        type=int,
+        default=DEFAULT_MAX_DEPTH,
+        help=f"Глубина обхода дочерних страниц (по умолчанию: {DEFAULT_MAX_DEPTH})"
+    )
+    parser.add_argument(
+        "-o", "--output",
+        type=str,
+        default=DEFAULT_OUTPUT_DIR,
+        help=f"Папка для сохранения файлов (по умолчанию: {DEFAULT_OUTPUT_DIR})"
+    )
+
+    args = parser.parse_args()
+
+    # Проверяем обязательные переменные окружения
+    if not BASE_URL:
+        print("❌ Не установлена переменная окружения CONFLUENCE_URL")
+        sys.exit(1)
+    if not API_TOKEN:
+        print("❌ Не установлена переменная окружения CONFLUENCE_TOKEN")
+        sys.exit(1)
+
+    output_dir = Path(args.output)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    print(f"🚀 Экспорт документации из {args.page_id}, глубина={args.depth}")
     print(f"📁 Вывод: {output_dir.absolute()}\n")
-    
+
     # Загружаем корневую страницу для метаданных
-    root_data = get_full_page_content(START_PAGE_ID)
+    root_data = get_full_page_content(args.page_id)
     if not root_data:
         print("❌ Не удалось загрузить корневую страницу")
         return
-    
+
     # Запускаем рекурсивный экспорт
     tree = crawl_and_export(
-        START_PAGE_ID, 
-        depth=0, 
-        max_depth=MAX_DEPTH, 
+        args.page_id,
+        depth=0,
+        max_depth=args.depth,
         output_dir=str(output_dir)
     )
-    
+
     if tree:
         # Генерируем README с оглавлением
-        toc_lines = ["# 📚 Документация SDK", "", f"Экспортировано: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", "", "## Оглавление", ""]
+        toc_lines = ["# 📚 Документация", "", f"Экспортировано: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", "", "## Оглавление", ""]
         toc_lines.extend(generate_toc(tree))
-        
+
         readme_path = output_dir / "README.md"
         with open(readme_path, "w", encoding="utf-8") as f:
             f.write("\n".join(toc_lines))
-        
+
         print(f"\n✅ Готово!")
         print(f"📄 Файлы: {output_dir}/**/*.md")
         print(f"📑 Оглавление: {readme_path}")
